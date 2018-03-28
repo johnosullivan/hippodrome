@@ -4,6 +4,7 @@
 </head>
 <body>
   <h1>hippodrome status</h1>
+  <button class="button" onclick="send_frame()">send_frame</button>
   <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
   <script>
@@ -14,6 +15,9 @@
     socket.on('test', function(data){
       console.log(data);
     });
+    function send_frame() {
+      socket.emit('send_frame', { session:'test', frame: {}});
+    }
   </script>
 </body>
 </html>

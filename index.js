@@ -9,7 +9,7 @@ import morgan from 'morgan';
 // gets all the init of the app, http, and socketio.
 var app = express();
 var http = http_lib.Server(app);
-var socket = socketio(http);
+var io = socketio(http);
 var apiRoutes = express.Router();
 // cors defined here.
 app.use(function(req, res, next) {
@@ -24,18 +24,22 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(morgan('dev'));
 app.use('/status', express.static('status.html'));
 // hippodrome system
-require('./routes/hippodrome.js')(app, apiRoutes, jwt, socket, express);
+require('./routes/hippodrome.js')(app, apiRoutes, jwt, io, express);
 // populates the api routes for all the features.
-require('./routes/authenticate.js')(app, apiRoutes, jwt, socket);
+require('./routes/authenticate.js')(app, apiRoutes, jwt, io);
 // Validate token.
 require('./routes/validate_token_route.js')(app, apiRoutes, jwt);
 // pinging the network for testing
-require('./routes/ping.js')(app, apiRoutes, jwt, socket);
+require('./routes/ping.js')(app, apiRoutes, jwt, io);
 // sets all the routes to api endpoint.
 app.use('/api', apiRoutes);
 // triggers when user connects to the hippodrome server.
-socket.on('connection', function(socket){
-  console.log("New Connection: ", socket.handshake);
+io.on('connection', function(socket){
+  socket.on('send_frame', function(payload){
+    var session = (payload.session !== undefined) ? payload.session : undefined;
+    var frame = (payload.frame !== undefined) ? payload.frame : undefined;
+    io.emit(session,frame);
+  });
 });
 // starts the server with port 3000.
 http.listen(3000, function(){
