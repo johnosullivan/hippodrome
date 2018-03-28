@@ -1,0 +1,8 @@
+{
+  "INTERNAL_SERVER_ERROR":"INTERNAL_SERVER_ERROR",
+  "USERNAME_EXISTS":"USERNAME_EXISTS",
+  "AUTHENTICATION_FAILED":"AUTHENTICATION_FAILED",
+  "TOKEN_FAILED":"No token provided.",
+  "TOKEN_FAILED_MESSAGE":"Token missing or not registered to your user.",
+  "TOEKN_AUTHENTICATION_FAILED":"Failed to authenticate token."
+}

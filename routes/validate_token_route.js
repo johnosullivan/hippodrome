@@ -1,10 +1,15 @@
+import configs from '../configs';
+import status from '../system_status';
+
+const TOKEN_SECRET = configs.token.secret;
+
 module.exports = function (app, route, jwt) {
     // middleware to confirm the token in the header is valid for payload
     route.use(function(req, res, next) {
         var token = req.headers && req.headers.authorization ? req.headers.authorization.split(' ')[1] : '';
         if (token) {
-            jwt.verify(token, app.get('jwt_secret'), function(err, decoded) {
-                if (err) { return res.json({ error: err, message: 'Failed to authenticate token.' });
+            jwt.verify(token, TOKEN_SECRET, function(err, decoded) {
+                if (err) { return res.json({ error: err, message: status.TOEKN_AUTHENTICATION_FAILED });
                 } else {
                     console.log(decoded)
                     next();
@@ -16,7 +21,7 @@ module.exports = function (app, route, jwt) {
         }
         // responds with a (403 Forbidden)
         function return403() {
-            res.status(403).send({ error: 'Token missing or not registered to your user.', message: 'No token provided.'});
+            res.status(403).send({ error: status.TOKEN_FAILED_MESSAGE, message: status.TOKEN_FAILED });
         }
     });
 }

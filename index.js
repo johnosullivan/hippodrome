@@ -6,11 +6,18 @@ import socketio from 'socket.io';
 import bodyParser from 'body-parser';
 import jwt from 'jsonwebtoken';
 import morgan from 'morgan';
+import configs from './configs';
+import mongoose from 'mongoose';
 // gets all the init of the app, http, and socketio.
 var app = express();
 var http = http_lib.Server(app);
 var io = socketio(http);
 var apiRoutes = express.Router();
+// temp example of session holding
+var sessions = [];
+// connects to the mongodb
+mongoose.Promise = global.Promise;
+mongoose.connect(configs.database.address, { promiseLibrary: global.Promise });
 // cors defined here.
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -24,9 +31,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(morgan('dev'));
 app.use('/status', express.static('status.html'));
 // hippodrome system
-require('./routes/hippodrome.js')(app, apiRoutes, jwt, io, express);
+require('./routes/hippodrome.js')(app, apiRoutes, jwt, io, express, sessions);
 // populates the api routes for all the features.
-require('./routes/authenticate.js')(app, apiRoutes, jwt, io);
+require('./routes/authenticate.js')(app, apiRoutes, jwt);
 // Validate token.
 require('./routes/validate_token_route.js')(app, apiRoutes, jwt);
 // pinging the network for testing
