@@ -37,7 +37,7 @@ require('./routes/authenticate.js')(app, apiRoutes, jwt);
 // Validate token.
 require('./routes/validate_token_route.js')(app, apiRoutes, jwt);
 // pinging the network for testing
-require('./routes/ping.js')(app, apiRoutes, jwt, io);
+require('./routes/sessions.js')(app, apiRoutes, jwt, io);
 // sets all the routes to api endpoint.
 app.use('/api', apiRoutes);
 // triggers when user connects to the hippodrome server.

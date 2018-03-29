@@ -92,7 +92,7 @@ module.exports = function(app, route, jwt) {
             return;
           }
           // Creates a token that can be used for interacting with the API
-          var token = jwt.sign({ username: user.username }, TOKEN_SECRET, { expiresIn: TOKEN_EXPIRES });
+          var token = jwt.sign({ username: user.username, id: user['_id'] }, TOKEN_SECRET, { expiresIn: TOKEN_EXPIRES });
           res.json({ success: true, token: token, user: { username:user.username, firstName:user.firstName, lastName:user.lastName, id:user.id, email:user.email } });
         });
       });

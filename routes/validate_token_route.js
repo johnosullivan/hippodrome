@@ -1,5 +1,6 @@
 import configs from '../configs';
 import status from '../system_status';
+import users from '../models/User';
 
 const TOKEN_SECRET = configs.token.secret;
 
@@ -11,8 +12,11 @@ module.exports = function (app, route, jwt) {
             jwt.verify(token, TOKEN_SECRET, function(err, decoded) {
                 if (err) { return res.json({ error: err, message: status.TOEKN_AUTHENTICATION_FAILED });
                 } else {
-                    console.log(decoded)
-                    next();
+                    // populates the reqs with user profile
+                    users.findById(decoded.id).select('username firstName lastName email id').exec(function(err, usr) {
+                        req.user = usr;
+                        next();
+                    });
                 }
             });
         } else {
