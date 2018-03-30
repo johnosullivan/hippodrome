@@ -12,11 +12,11 @@
     socket.on('connect', function(data) {
       console.log("connected!", data);
     });
-    socket.on('test', function(data){
+    socket.on('4qdzMJVtHES5avZQvV1QHxhUq4atCxR9c49FeEbDDXfhOvqCLA', function(data){
       console.log(data);
     });
     function send_frame() {
-      socket.emit('send_frame', { session:'test', frame: {}});
+      socket.emit('send_frame', { session:'test', frame:"benwashere"  });
     }
   </script>
 </body>

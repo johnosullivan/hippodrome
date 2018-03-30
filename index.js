@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import morgan from 'morgan';
 import configs from './configs';
 import mongoose from 'mongoose';
+import dispatcher from './controllers/dispatcher';
 // gets all the init of the app, http, and socketio.
 var app = express();
 var http = http_lib.Server(app);
@@ -15,6 +16,8 @@ var io = socketio(http);
 var apiRoutes = express.Router();
 // temp example of session holding
 var sessions = [];
+var readyForSession = {};
+var dispatcher_controller = new dispatcher(io);
 // connects to the mongodb
 mongoose.Promise = global.Promise;
 mongoose.connect(configs.database.address, { promiseLibrary: global.Promise });
@@ -37,9 +40,11 @@ require('./routes/authenticate.js')(app, apiRoutes, jwt);
 // Validate token.
 require('./routes/validate_token_route.js')(app, apiRoutes, jwt);
 // pinging the network for testing
-require('./routes/sessions.js')(app, apiRoutes, jwt, io);
+require('./routes/sessions.js')(app, apiRoutes, jwt, io, readyForSession);
 // sets all the routes to api endpoint.
 app.use('/api', apiRoutes);
+//starts the dispatcher
+dispatcher_controller.start();
 // triggers when user connects to the hippodrome server.
 io.on('connection', function(socket){
   socket.on('send_frame', function(payload){
@@ -51,4 +56,9 @@ io.on('connection', function(socket){
 // starts the server with port 3000.
 http.listen(3000, function(){
   // will print out the server details.
+});
+// catch the control-c and kill services
+process.on('SIGINT', function() {
+    dispatcher_controller.kill();
+    process.exit();
 });
