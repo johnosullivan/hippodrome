@@ -9,6 +9,7 @@ import morgan from 'morgan';
 import configs from './configs';
 import mongoose from 'mongoose';
 import dispatcher from './controllers/dispatcher';
+import PubSub from 'pubsub-js';
 // gets all the init of the app, http, and socketio.
 var app = express();
 var http = http_lib.Server(app);
@@ -17,14 +18,15 @@ var apiRoutes = express.Router();
 // temp example of session holding
 var sessions = [];
 var readyForSession = {};
-var dispatcher_controller = new dispatcher(io);
+var dispatcher_controller = new dispatcher(io, sessions_func);
 // connects to the mongodb
 mongoose.Promise = global.Promise;
 mongoose.connect(configs.database.address, { promiseLibrary: global.Promise });
 // cors defined here.
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Authorization,Origin, X-Requested-With, Content-Type, Accept");
+  res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
+  res.header("Access-Control-Allow-Headers", "Authorization, Origin, X-Requested-With, Content-Type, Accept");
   next();
 });
 // defines the body parser for the http calls.
@@ -47,11 +49,16 @@ app.use('/api', apiRoutes);
 dispatcher_controller.start();
 // triggers when user connects to the hippodrome server.
 io.on('connection', function(socket){
+  //console.log("connection: ", socket.handshake);
   socket.on('send_frame', function(payload){
     var session = (payload.session !== undefined) ? payload.session : undefined;
     var frame = (payload.frame !== undefined) ? payload.frame : undefined;
     io.emit(session,frame);
   });
+  socket.on('confirmedConnection', function(payload){
+    PubSub.publish('confirmedConnection', { 'user': payload, 'socket':socket });
+  });
+  socket.on('disconnect', function () { });
 });
 // starts the server with port 3000.
 http.listen(3000, function(){

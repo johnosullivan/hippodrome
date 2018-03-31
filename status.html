@@ -4,19 +4,75 @@
 </head>
 <body>
   <h1>hippodrome status</h1>
-  <button class="button" onclick="send_frame()">send_frame</button>
+  <button class="button" onclick="send_frame()">readyState</button>
+  <button class="button" onclick="disconnect()">disconnect</button>
+  <button class="button" onclick="frame()">frame</button>
+
   <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
   <script>
-    var socket = io.connect('http://localhost:3000');
-    socket.on('connect', function(data) {
-      console.log("connected!", data);
-    });
-    socket.on('4qdzMJVtHES5avZQvV1QHxhUq4atCxR9c49FeEbDDXfhOvqCLA', function(data){
+
+    var socket;
+    var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1vZ2lsc2thIiwiaWQiOiI1YWJkOTk1MjQ4NDVlOGNhMThmYjJhNzciLCJpYXQiOjE1MjIzNzUxNjIsImV4cCI6MTUyNTAwMzE2Mn0.cMr4XssRSzPXxnv9m5daGk3826xU59XKCXlFB-bw36U";
+
+    var session_id = "";
+    var function_name = "";
+
+    function frame() {
+      socket.sockets.in(session_id).emit(function_name, 'test test');
+    }
+
+    function readySession(data) {
       console.log(data);
-    });
+      socket = io.connect('http://localhost:3000');
+      var s = data;
+      socket.on('message', function(data) {
+        console.log('Incoming message:', data);
+      });
+      socket.on(data['rand_user'], function(rand_user_data) {
+
+        console.log("rand_user_data:", rand_user_data);
+
+        if (rand_user_data['type'] == 'JOIN_SESSION_FOUND') {
+          session_id = rand_user_data['session_id'];
+          function_name = rand_user_data['function_name'];
+          socket.on(function_name, function(data) {
+            console.log('Data: ', data);
+          });
+        }
+
+      });
+      socket.on('connect', function(data) {
+        console.log("connected!");
+        socket.emit("confirmedConnection", {"token":token, "rand_user":s['rand_user'] });
+      });
+    }
+
+    function disconnect() {
+      console.log("disconnecting...");
+      socket.disconnect();
+    }
+
     function send_frame() {
-      socket.emit('send_frame', { session:'test', frame:"benwashere"  });
+      //socket.emit('send_frame', { session:'test', frame:"benwashere"  });
+      /*var socket = io.connect('http://localhost:3000');
+      socket.on('connect', function(data) {
+        console.log("connected!", data);
+      });*/
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("GET", "http://localhost:3000/api/readyForSession", true);
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+         // Action to be performed when the document is read;
+         var obj = JSON.parse(this.responseText);
+         readySession(obj);
+        }
+      };
+      xhttp.setRequestHeader("Authorization", "Bearer " + token);
+      xhttp.send();
+
+
+
     }
   </script>
 </body>
