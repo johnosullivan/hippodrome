@@ -10,6 +10,8 @@
     <br><br>
     <input type="button" onclick="login()" value="Login">
 
+    <button class="button" onclick="ios()">iOS_Test_Connect</button>
+    <button class="button" onclick="ping()">iOS_Test_Ping</button>
 
 
   <button class="button" onclick="send_frame()">Ready_State</button>
@@ -27,6 +29,22 @@
     var session_id = "";
     var function_name = "";
     var rand_user = "";
+
+    var tsock;
+
+    function ios() {
+      tsock = io.connect('http://localhost:3000');
+      tsock.on('ping', function(data) {
+        console.log(data);
+      });
+      tsock.on('connect', function(data) {
+        console.log("connected!");
+      });
+    }
+
+    function ping() {
+      tsock.emit("ping", "has_ping");
+    }
 
     function leaveSession() {
       socket.emit("leaveSession", {"token":token, "rand_user":rand_user, "session_id":session_id });

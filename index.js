@@ -49,7 +49,7 @@ app.use('/api', apiRoutes);
 dispatcher_controller.start();
 // triggers when user connects to the hippodrome server.
 io.on('connection', function(socket){
-  //console.log("connection: ", socket.handshake);
+  console.log("connection: ", socket.handshake);
   var rand_user_connection = "";
   socket.on('send_frame', function(payload){
     io.sockets.in(payload['session_id']).emit(payload['function_name'], payload['payload']);
@@ -62,7 +62,11 @@ io.on('connection', function(socket){
     PubSub.publish('leaveSession', { 'user': payload });
   });
   socket.on('disconnect', function () {
+    console.log("disconnect");
     PubSub.publish('disconnectSession', {"rand_user_connection":rand_user_connection});
+  });
+  socket.on('ping', function (data) {
+    io.sockets.emit('ping', data);
   });
 });
 // starts the server with port 3000.

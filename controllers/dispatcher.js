@@ -85,7 +85,7 @@ module.exports = class dispatcher {
 
     var session_size = 3;
 
-    console.log("global_player_pool -> ", this.global_player_pool);
+    //console.log("global_player_pool -> ", this.global_player_pool);
 
     if (this.global_player_pool.length >= session_size) {
 
