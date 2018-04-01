@@ -18,7 +18,7 @@ var apiRoutes = express.Router();
 // temp example of session holding
 var sessions = [];
 var readyForSession = {};
-var dispatcher_controller = new dispatcher(io, sessions_func);
+var dispatcher_controller = new dispatcher(io);
 // connects to the mongodb
 mongoose.Promise = global.Promise;
 mongoose.connect(configs.database.address, { promiseLibrary: global.Promise });
@@ -50,15 +50,20 @@ dispatcher_controller.start();
 // triggers when user connects to the hippodrome server.
 io.on('connection', function(socket){
   //console.log("connection: ", socket.handshake);
+  var rand_user_connection = "";
   socket.on('send_frame', function(payload){
-    var session = (payload.session !== undefined) ? payload.session : undefined;
-    var frame = (payload.frame !== undefined) ? payload.frame : undefined;
-    io.emit(session,frame);
+    io.sockets.in(payload['session_id']).emit(payload['function_name'], payload['payload']);
   });
-  socket.on('confirmedConnection', function(payload){
-    PubSub.publish('confirmedConnection', { 'user': payload, 'socket':socket });
+  socket.on('confirmedSession', function(payload){
+    rand_user_connection = payload['rand_user'];
+    PubSub.publish('confirmedSession', { 'user': payload, 'socket':socket });
   });
-  socket.on('disconnect', function () { });
+  socket.on('leaveSession', function(payload){
+    PubSub.publish('leaveSession', { 'user': payload });
+  });
+  socket.on('disconnect', function () {
+    PubSub.publish('disconnectSession', {"rand_user_connection":rand_user_connection});
+  });
 });
 // starts the server with port 3000.
 http.listen(3000, function(){

@@ -3,23 +3,60 @@
 <head>
 </head>
 <body>
-  <h1>hippodrome status</h1>
-  <button class="button" onclick="send_frame()">readyState</button>
-  <button class="button" onclick="disconnect()">disconnect</button>
-  <button class="button" onclick="frame()">frame</button>
+  <h1>hippodrome test</h1>
+
+    <input type="text" name="username" id="username" value="" placeholder="username">
+    <input type="password" name="password" id="password" value="" placeholder="password">
+    <br><br>
+    <input type="button" onclick="login()" value="Login">
+
+
+
+  <button class="button" onclick="send_frame()">Ready_State</button>
+  <button class="button" onclick="leaveSession()">Leave_Session_Matching</button>
+  <button class="button" onclick="frame()">Send_Data_Frame</button>
+  <button class="button" onclick="leaveSession()">Leave_Session</button>
 
   <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
   <script>
 
     var socket;
-    var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1vZ2lsc2thIiwiaWQiOiI1YWJkOTk1MjQ4NDVlOGNhMThmYjJhNzciLCJpYXQiOjE1MjIzNzUxNjIsImV4cCI6MTUyNTAwMzE2Mn0.cMr4XssRSzPXxnv9m5daGk3826xU59XKCXlFB-bw36U";
+    var token = "";
 
     var session_id = "";
     var function_name = "";
+    var rand_user = "";
+
+    function leaveSession() {
+      socket.emit("leaveSession", {"token":token, "rand_user":rand_user, "session_id":session_id });
+    }
 
     function frame() {
-      socket.sockets.in(session_id).emit(function_name, 'test test');
+      socket.emit("send_frame", { "payload":"got inspect", "session_id":session_id, "function_name":function_name  });
+    }
+
+    function login() {
+      var username = document.getElementById("username").value;
+      var password = document.getElementById("password").value;
+
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("POST", "http://localhost:3000/api/auth/authenticate", true);
+      xhttp.setRequestHeader("Content-Type", "application/json");
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+         var obj = JSON.parse(this.responseText);
+         console.log(obj);
+         if (obj['success']) {
+           token = obj['token'];
+         }
+        }
+      };
+      var data = JSON.stringify({
+        'username':username,
+        'password':password
+      });
+      xhttp.send(data);
     }
 
     function readySession(data) {
@@ -44,7 +81,11 @@
       });
       socket.on('connect', function(data) {
         console.log("connected!");
-        socket.emit("confirmedConnection", {"token":token, "rand_user":s['rand_user'] });
+        rand_user = s['rand_user'];
+        socket.emit("confirmedSession", {"token":token, "rand_user":rand_user });
+      });
+      socket.on('disconnect', function(data) {
+        console.log("disconnect!");
       });
     }
 
