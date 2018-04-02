@@ -49,12 +49,13 @@ app.use('/api', apiRoutes);
 dispatcher_controller.start();
 // triggers when user connects to the hippodrome server.
 io.on('connection', function(socket){
-  console.log("Connection: ", socket.handshake);
+  //console.log("Connection: ", socket.handshake);
   var rand_user_connection = "";
-  socket.on('send_frame', function(payload){
-    console.log("send_frame");
-    io.emit(payload['function_name'], payload['payload']);
+  var rand_user_session_id = "";
+  socket.on('sendFrame', function(payload){
+    //io.emit(payload['function_name'], payload['payload']);
     //io.sockets.in(payload['session_id']).emit(payload['function_name'], payload['payload']);
+    PubSub.publish('sendFrame', { 'user': payload, 'rand_user':rand_user_connection });
   });
   socket.on('confirmedSession', function(payload){
     rand_user_connection = payload['rand_user'];
@@ -63,9 +64,23 @@ io.on('connection', function(socket){
   socket.on('leaveSession', function(payload){
     PubSub.publish('leaveSession', { 'user': payload });
   });
+  socket.on('completedRound', function(payload){
+    PubSub.publish('completedRound', { 'user': payload, 'rand_user': rand_user_connection });
+  });
+  socket.on('playerReady', function(payload){
+    PubSub.publish('playerReady', { 'user': payload, 'rand_user': rand_user_connection });
+  });
+  socket.on('playerNotReady', function(payload){
+    PubSub.publish('playerNotReady', { 'user': payload, 'rand_user': rand_user_connection });
+  });
+  socket.on('sessionPrestartConfirm', function(payload){
+    PubSub.publish('sessionPrestartConfirm', { 'user': payload, 'rand_user': rand_user_connection });
+  });
   socket.on('disconnect', function () {
     console.log("Disconnect");
     PubSub.publish('disconnectSession', {"rand_user_connection":rand_user_connection});
+    rand_user_connection = "";
+    rand_user_session_id = "";
   });
   socket.on('test_ping', function (data) {
     io.emit('test_ping_rec', {'data':data});

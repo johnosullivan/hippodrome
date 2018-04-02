@@ -9,16 +9,21 @@
     <input type="password" name="password" id="password" value="" placeholder="password">
     <input type="text" name="message" id="message" value="" placeholder="message">
     <br><br>
-    <input type="button" onclick="login()" value="Login">
 
     <button class="button" onclick="ios()">iOS_Test_Connect</button>
     <button class="button" onclick="ping()">iOS_Test_Ping</button>
+    <br><br>
+    <input type="button" onclick="login()" value="Login">
+    <button class="button" onclick="send_frame()">Ready_State</button>
+    <button class="button" onclick="player_ready()">Player_Ready</button>
+    <button class="button" onclick="player_not_ready()">Player_Not_Ready</button>
+    <button class="button" onclick="confirmed_ready()">Player_Confirmed_Ready</button>
+    <button class="button" onclick="completed_round()">Completed_Round</button>
 
-
-  <button class="button" onclick="send_frame()">Ready_State</button>
-  <button class="button" onclick="leaveSession()">Leave_Session_Matching</button>
-  <button class="button" onclick="frame()">Send_Data_Frame</button>
-  <button class="button" onclick="leaveSession()">Leave_Session</button>
+    <br><br>
+    <button class="button" onclick="leaveSession()">Leave_Session_Matching</button>
+    <button class="button" onclick="frame()">Send_Data_Frame</button>
+    <button class="button" onclick="leaveSession()">Leave_Session</button>
 
   <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
@@ -33,13 +38,29 @@
 
     var tsock;
 
+    function player_ready() {
+      socket.emit("playerReady", {"token":token });
+    }
+
+    function player_not_ready() {
+      socket.emit("playerNotReady", {"token":token });
+    }
+
+    function confirmed_ready() {
+      socket.emit("sessionPrestartConfirm", {"token":token });
+    }
+
+    function completed_round() {
+      socket.emit("completedRound", {"token":token });
+    }
+
     function ios() {
       tsock = io.connect('http://localhost:3000');
       tsock.on('test_ping_rec', function(data) {
         console.log(data);
       });
       tsock.on('connect', function(data) {
-        console.log("connected!");
+        //console.log("connected!");
       });
     }
 
@@ -53,7 +74,7 @@
     }
 
     function frame() {
-      socket.emit("send_frame", { "payload":"got inspect", "session_id":session_id, "function_name":function_name  });
+      socket.emit("sendFrame", { "payload":"got inspect", "session_id":session_id, "function_name":function_name  });
     }
 
     function login() {
@@ -100,12 +121,12 @@
 
       });
       socket.on('connect', function(data) {
-        console.log("connected!");
+        //console.log("connected!");
         rand_user = s['rand_user'];
         socket.emit("confirmedSession", {"token":token, "rand_user":rand_user });
       });
       socket.on('disconnect', function(data) {
-        console.log("disconnect!");
+        //console.log("disconnect!");
       });
     }
 

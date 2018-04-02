@@ -16,20 +16,22 @@ module.exports = class dispatcher {
     this.randToID = {};
     this.interval_object = {};
     this.sockets = {};
-    this.sessions = [];
+    this.sessions = {};
     this.global_player_pool = [];
+
+    this.playerToSession = {};
 
     this.test_func = "";
     this.test_session_id = "";
 
+
+
     var self = this;
     var readyForSession_func = function (event_name, data) {
-      //console.log(event_name, data);
       self.readyForSession[data.user['_id']] = data.rand_user;
     };
 
     var exitSessionQuene_func = function (event_name, data) {
-      //console.log(event_name, data);
       delete self.readyForSession[data.user['_id']];
     };
 
@@ -74,7 +76,35 @@ module.exports = class dispatcher {
       delete self.readyForSession[id];
     };
 
+    var readyPlayer_func = function (event_name, data) {
+      self.sessions[self.playerToSession[data['rand_user']]].playerReady(data);
+    };
+
+    var readyNotPlayerr_func = function (event_name, data) {
+      self.sessions[self.playerToSession[data['rand_user']]].playerNotReady(data);
+    };
+
+    var sessionPrestartConfirm_func = function (event_name, data) {
+      self.sessions[self.playerToSession[data['rand_user']]].sessionPrestartConfirm(data);
+    };
+
+    var sendFrame_func = function (event_name, data) {
+      self.sessions[self.playerToSession[data['rand_user']]].sendFrame(data);
+    };
+
+    var completedRound_func = function (event_name, data) {
+      self.sessions[self.playerToSession[data['rand_user']]].completedRound(data);
+    };
+
     this.readyForSession_pubsub = PubSub.subscribe('readyForSession', readyForSession_func);
+
+    this.readyPlayer_pubsub = PubSub.subscribe('playerReady', readyPlayer_func);
+    this.readyNotPlayer_pubsub = PubSub.subscribe('playerNotReady', readyNotPlayerr_func);
+    this.sessionPrestartConfirm_pubsub = PubSub.subscribe('sessionPrestartConfirm', sessionPrestartConfirm_func);
+    this.sendFrame_pubsub = PubSub.subscribe('sendFrame', sendFrame_func);
+
+    this.completedRound_pubsub = PubSub.subscribe('completedRound', completedRound_func);
+
     this.exitSessionQuene_pubsub = PubSub.subscribe('exitSessionQuene', exitSessionQuene_func);
     this.confirmedConnection_pubsub = PubSub.subscribe('confirmedSession', confirmed_connection_func);
     this.leaveSession_pubsub = PubSub.subscribe('leaveSession', leaveSessionn_func);
@@ -83,19 +113,16 @@ module.exports = class dispatcher {
 
   loop() {
 
-    var session_size = 2;
+    var session_size = 3;
 
-    console.log("global_player_pool -> ", this.global_player_pool);
+    //console.log("global_player_pool -> ", this.global_player_pool);
 
     if (this.global_player_pool.length >= session_size) {
 
       var current_session_players = [];
-
+      var current_session_sockets = {};
       var session_id = random(50,"aA0");
       var function_name = random(25,"aA0");
-
-      console.log("session_id -> ", session_id);
-      console.log("function_name -> ", session_id);
 
       for (var i = 0; i < session_size; i++) {
 
@@ -107,24 +134,16 @@ module.exports = class dispatcher {
         var title = "player #" + (i + 1) + " -> ";
         console.log(title, player);
 
-        current_session_players.push(id);
-
-        this.io.emit(player, { "type":"JOIN_SESSION_FOUND", "function_name":function_name, "session_id": session_id});
-
-        /*if(typeof this.sockets[id].join === 'function') {
-          console.log("It's function");
-        }  else if (typeof myObj.prop2 === 'undefined') {
-          console.log("It's undefined");
-        }*/
-
-        this.sockets[id].join(session_id);
-
+        current_session_players.push({ "id":id, "player":player });
+        current_session_sockets[player] = this.sockets[this.randToID[player]];
+        //this.sockets[id].join(session_id);
+        this.playerToSession[player] = session_id;
         this.global_player_pool.splice(rand_index, 1);
-
       }
 
-      console.log("current_session_players -> ", current_session_players);
-
+      var current_session = new session(this.io,session_id,function_name,current_session_players, current_session_sockets);
+      this.sessions[session_id] = current_session;
+      current_session.release();
 
     } else {
 
@@ -148,6 +167,11 @@ module.exports = class dispatcher {
     PubSub.unsubscribe(this.confirmedConnection_pubsub);
     PubSub.unsubscribe(this.leaveSession_pubsub);
     PubSub.unsubscribe(this.disconnectSession_pubsub);
+    PubSub.unsubscribe(this.readyNotPlayer_pubsub);
+    PubSub.unsubscribe(this.readyPlayer_pubsub);
+    PubSub.unsubscribe(this.sessionPrestartConfirm_pubsub);
+    PubSub.unsubscribe(this.sendFrame_pubsub);
+    PubSub.unsubscribe(this.completedRound_pubsub);
     // stops the dispatcher timer
     clearInterval(this.interval_object);
   }
