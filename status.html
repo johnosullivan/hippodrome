@@ -7,6 +7,7 @@
 
     <input type="text" name="username" id="username" value="" placeholder="username">
     <input type="password" name="password" id="password" value="" placeholder="password">
+    <input type="text" name="message" id="message" value="" placeholder="message">
     <br><br>
     <input type="button" onclick="login()" value="Login">
 
@@ -34,7 +35,7 @@
 
     function ios() {
       tsock = io.connect('http://localhost:3000');
-      tsock.on('ping', function(data) {
+      tsock.on('test_ping_rec', function(data) {
         console.log(data);
       });
       tsock.on('connect', function(data) {
@@ -43,7 +44,8 @@
     }
 
     function ping() {
-      tsock.emit("ping", "has_ping");
+      var message = document.getElementById("message").value;
+      tsock.emit("test_ping", message);
     }
 
     function leaveSession() {

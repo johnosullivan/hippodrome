@@ -83,9 +83,9 @@ module.exports = class dispatcher {
 
   loop() {
 
-    var session_size = 3;
+    var session_size = 2;
 
-    //console.log("global_player_pool -> ", this.global_player_pool);
+    console.log("global_player_pool -> ", this.global_player_pool);
 
     if (this.global_player_pool.length >= session_size) {
 
@@ -97,7 +97,7 @@ module.exports = class dispatcher {
       console.log("session_id -> ", session_id);
       console.log("function_name -> ", session_id);
 
-      for (var i = 0; i < 3; i++) {
+      for (var i = 0; i < session_size; i++) {
 
         var rand_index = Math.floor(Math.random() * this.global_player_pool.length);
 
@@ -110,6 +110,12 @@ module.exports = class dispatcher {
         current_session_players.push(id);
 
         this.io.emit(player, { "type":"JOIN_SESSION_FOUND", "function_name":function_name, "session_id": session_id});
+
+        /*if(typeof this.sockets[id].join === 'function') {
+          console.log("It's function");
+        }  else if (typeof myObj.prop2 === 'undefined') {
+          console.log("It's undefined");
+        }*/
 
         this.sockets[id].join(session_id);
 
