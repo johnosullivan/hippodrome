@@ -11,20 +11,16 @@ module.exports = class dispatcher {
   constructor(_io) {
     // sets the dispatcher controllers variables
     this.io = _io;
-
     this.readyForSession = {};
     this.randToID = {};
     this.interval_object = {};
     this.sockets = {};
     this.sessions = {};
     this.global_player_pool = [];
-
     this.playerToSession = {};
-
+    // variables for dev testing
     this.test_func = "";
     this.test_session_id = "";
-
-
 
     var self = this;
     var readyForSession_func = function (event_name, data) {
@@ -68,9 +64,7 @@ module.exports = class dispatcher {
       var rand = data['rand_user_connection'];
       var id = self.randToID[rand];
       for (var i = 0; i < self.global_player_pool.length; i++) {
-        if (id == self.global_player_pool[i]) {
-          self.global_player_pool.splice(i, 1);
-        }
+        if (id == self.global_player_pool[i]) { self.global_player_pool.splice(i, 1); }
       }
       delete self.sockets[id];
       delete self.readyForSession[id];
@@ -79,69 +73,67 @@ module.exports = class dispatcher {
     var readyPlayer_func = function (event_name, data) {
       self.sessions[self.playerToSession[data['rand_user']]].playerReady(data);
     };
-
     var readyNotPlayerr_func = function (event_name, data) {
       self.sessions[self.playerToSession[data['rand_user']]].playerNotReady(data);
     };
-
     var sessionPrestartConfirm_func = function (event_name, data) {
       self.sessions[self.playerToSession[data['rand_user']]].sessionPrestartConfirm(data);
     };
-
     var sendFrame_func = function (event_name, data) {
       self.sessions[self.playerToSession[data['rand_user']]].sendFrame(data);
     };
-
     var completedRound_func = function (event_name, data) {
       self.sessions[self.playerToSession[data['rand_user']]].completedRound(data);
     };
+    var terminateSession_func = function (event_name, data) {
+      delete self.sessions[data['session_id']];
+    };
 
     this.readyForSession_pubsub = PubSub.subscribe('readyForSession', readyForSession_func);
-
     this.readyPlayer_pubsub = PubSub.subscribe('playerReady', readyPlayer_func);
     this.readyNotPlayer_pubsub = PubSub.subscribe('playerNotReady', readyNotPlayerr_func);
     this.sessionPrestartConfirm_pubsub = PubSub.subscribe('sessionPrestartConfirm', sessionPrestartConfirm_func);
     this.sendFrame_pubsub = PubSub.subscribe('sendFrame', sendFrame_func);
-
     this.completedRound_pubsub = PubSub.subscribe('completedRound', completedRound_func);
-
     this.exitSessionQuene_pubsub = PubSub.subscribe('exitSessionQuene', exitSessionQuene_func);
     this.confirmedConnection_pubsub = PubSub.subscribe('confirmedSession', confirmed_connection_func);
     this.leaveSession_pubsub = PubSub.subscribe('leaveSession', leaveSessionn_func);
     this.disconnectSession_pubsub = PubSub.subscribe('disconnectSession', disconnectSession_func);
+    this.terminateSession_pubsub = PubSub.subscribe('terminateSession', terminateSession_func);
   }
 
   loop() {
 
-    var session_size = 3;
+    var session_size = 2;
 
-    //console.log("global_player_pool -> ", this.global_player_pool);
+    console.log("=========================================");
+    console.log("global_player_pool -> ", this.global_player_pool.length);
+    console.log("sessions_pool -> ", Object.keys(this.sessions));
 
     if (this.global_player_pool.length >= session_size) {
-
       var current_session_players = [];
       var current_session_sockets = {};
       var session_id = random(50,"aA0");
       var function_name = random(25,"aA0");
 
       for (var i = 0; i < session_size; i++) {
-
         var rand_index = Math.floor(Math.random() * this.global_player_pool.length);
-
         var id = this.global_player_pool[rand_index];
         var player = this.readyForSession[id];
-
-        var title = "player #" + (i + 1) + " -> ";
-        console.log(title, player);
-
         current_session_players.push({ "id":id, "player":player });
         current_session_sockets[player] = this.sockets[this.randToID[player]];
-        //this.sockets[id].join(session_id);
         this.playerToSession[player] = session_id;
         this.global_player_pool.splice(rand_index, 1);
+        //TODO: this.sockets[id].join(session_id);
       }
 
-      var current_session = new session(this.io,session_id,function_name,current_session_players, current_session_sockets);
+      var current_session = new session(
+        this.io,
+        session_id,
+        function_name,
+        current_session_players,
+        current_session_sockets
+      );
       this.sessions[session_id] = current_session;
       current_session.release();
 
@@ -151,13 +143,9 @@ module.exports = class dispatcher {
 
   }
 
-  disconnect(player) {
-
-  }
-
   start() {
     var self = this;
-    this.interval_object = setInterval(function() { self.loop() }, 5000);
+    this.interval_object = setInterval(function() { self.loop() }, 20000);
   }
 
   kill() {

@@ -51,7 +51,8 @@
     }
 
     function completed_round() {
-      socket.emit("completedRound", {"token":token });
+      var random_number = Math.floor(Math.random() * 500);
+      socket.emit("completedRound", {"token":token, "results":{ "total_time":random_number } });
     }
 
     function ios() {
@@ -74,7 +75,7 @@
     }
 
     function frame() {
-      socket.emit("sendFrame", { "payload":"got inspect", "session_id":session_id, "function_name":function_name  });
+      socket.emit("sendFrame", { "payload":{ data: "sajdfhahfkdhaskjdsah" }, "session_id":session_id, "function_name":function_name  });
     }
 
     function login() {
@@ -109,13 +110,14 @@
       });
       socket.on(data['rand_user'], function(rand_user_data) {
 
-        console.log("rand_user_data:", rand_user_data);
+        console.log("SessionStatus ->",rand_user_data);
 
         if (rand_user_data['type'] == 'JOIN_SESSION_FOUND') {
           session_id = rand_user_data['session_id'];
           function_name = rand_user_data['function_name'];
           socket.on(function_name, function(data) {
-            console.log('Data: ', data);
+            console.log("GamePlayEvent ->", data);
+
           });
         }
 
@@ -126,7 +128,7 @@
         socket.emit("confirmedSession", {"token":token, "rand_user":rand_user });
       });
       socket.on('disconnect', function(data) {
-        //console.log("disconnect!");
+        console.log("Session Completed: ",session_id);
       });
     }
 
