@@ -15,12 +15,12 @@ enum HttpMethod : String {
     case  PUT
 }
 
-class HttpClientApi: NSObject{
+class HttpClientAPI: NSObject{
 
     var request : URLRequest?
     var session : URLSession?
 
-    static func instance() ->  HttpClientApi{ return HttpClientApi() }
+    static func instance() ->  HttpClientAPI{ return HttpClientAPI() }
 
     func makeAPICall(url: String,params: Dictionary<String, Any>?, method: HttpMethod, auth: String, success:@escaping ( Data? ,HTTPURLResponse?  , NSError? ) -> Void, failure: @escaping ( Data? ,HTTPURLResponse?  , NSError? )-> Void) {
 
@@ -66,93 +66,112 @@ class hippodrome: NSObject {
     static let auth_endpoint = base_endpoint + "/api/auth/authenticate"
     static let readySession_endpoint = base_endpoint + "/api/readyForSession"
 
+    static let session_found = "JOIN_SESSION_FOUND"
+
     var socket = SocketIOClient(socketURL: URL(string: base_endpoint)!, config: [.log(true), .compress])
     var session_auth_token = ""
     var rand_user = ""
     var session_id = ""
     var function_name = ""
 
-    override init() {
-        super.init()
+    var completionFrameHandler: (Any) -> Void?
+    var completionSessionHandler: (Any) -> Void?
 
+    override init() {
+        //super.init()
+
+        let temp_handler: (Any) -> Void = { success in
+
+        }
+        self.completionFrameHandler = temp_handler;
+        self.completionSessionHandler = temp_handler;
+    }
+
+    func configure() {
         socket.on(clientEvent: .connect) {data, ack in
             print("socket connection -> \(data)")
-
             self.socket.emit("confirmedSession", ["token":self.session_auth_token,"rand_user":self.rand_user])
         }
-        /*
-        socket.on("test_ping_rec") {data, ack in
-            print("test_ping_rec -> \(data)")
-        }
-
-        socket.on(clientEvent: .connect) {data, ack in
-            print("socket connection -> \(data)")
-        }
-        */
-
     }
 
-    func randSub(completionHandler: @escaping (_ data: Any) -> Void) {
+    func playerPubSub(handler: @escaping (_ data: Any) -> Void) {
+        self.completionSessionHandler = handler
         socket.on(self.rand_user) {data, ack in
-            print("rand_user -> \(data)")
+
             if let arr = data as? [[String: Any]] {
                 let type = arr[0]["type"] as? String
-                self.function_name = (arr[0]["function_name"] as? String)!
-                self.session_id = (arr[0]["type"] as? String)!
                 print(type!)
-                print(self.function_name)
-                print(self.session_id)
-                self.socket.on(self.function_name) {data, ack in
-                    print("function_name -> \(data)")
-                    completionHandler(data);
+
+                if (type! == "JOIN_SESSION_FOUND") {
+                    self.function_name = (arr[0]["function_name"] as? String)!
+                    self.session_id = (arr[0]["session_id"] as? String)!
+                    print(self.function_name)
+                    print(self.session_id)
+                    self.socket.on(self.function_name) {data, ack in
+                        self.completionFrameHandler(data);
+                    }
+                } else {
+                    self.completionSessionHandler(data);
                 }
+
+
             }
+
         }
     }
 
-    func send_frame() {
-        self.socket.emit("send_frame", ["payload":"safhjhsaghjsadgjhsagfasj","function_name":self.function_name,"session_id":self.session_id])
+    func sessionPrestartConfirm() {
+        self.socket.emit("sessionPrestartConfirm", ["token": self.session_auth_token])
+    }
+
+    func completedRound(results: Any) {
+        self.socket.emit("completedRound", ["token": self.session_auth_token, "results": results])
+    }
+
+    func playerReady() {
+        // Sends the frame to the session with its players
+        self.socket.emit("playerReady", ["token": self.session_auth_token])
+    }
+
+    func sendFrame(payload: Any) {
+        // Sends the frame to the session with its players
+        self.socket.emit("sendFrame", ["payload": payload, "function_name": self.function_name, "session_id": self.session_id])
     }
 
     func leaveSession() {
-        self.socket.emit("leaveSession", ["token":self.session_auth_token,"rand_user":self.rand_user,"session_id":self.session_id])
+        // Leaves the current session in play
+        self.socket.emit("leaveSession", ["token": self.session_auth_token,  "rand_user": self.rand_user, "session_id": self.session_id])
     }
 
     func readyForSession(completionHandler: @escaping (_ data: Any) -> Void) {
-
+        // Preparing the headers
         let auth_token = "Bearer " + session_auth_token
         let paramsDictionary = [String:Any]()
-
-        HttpClientApi.instance().makeAPICall(url: hippodrome.readySession_endpoint, params:paramsDictionary, method: .GET,auth: auth_token, success: { (data, response, error) in
+        // HttpClientAPI makes the API readyForSession call to the server
+        HttpClientAPI.instance().makeAPICall(url: hippodrome.readySession_endpoint, params:paramsDictionary, method: .GET,auth: auth_token, success: { (data, response, error) in
             do {
                 let json = try JSONSerialization.jsonObject(with: (data as Data?)!, options: []) as! [String: AnyObject]
-                print(json)
-                let rand_user = json["rand_user"] as! String
-                self.rand_user = rand_user
-                self.randSub(completionHandler: completionHandler)
+                self.rand_user = json["rand_user"] as! String
+                self.playerPubSub(handler: completionHandler)
                 self.socket.connect()
             } catch let error as NSError {
                 print("Failed: \(error.localizedDescription)")
-                completionHandler("")
             }
         }, failure: { (data, response, error) in
             print(response as Any)
-            completionHandler("")
         })
-
-        completionHandler(session_auth_token)
     }
 
     func authenticate(username: String, password: String, completionHandler: @escaping (_ sucess: Bool) -> Void) {
+        // Preparing the authenticate API call
         var paramsDictionary = [String:Any]()
         paramsDictionary["username"] = username
         paramsDictionary["password"] = password
-
-        HttpClientApi.instance().makeAPICall(url: hippodrome.auth_endpoint, params:paramsDictionary, method: .POST,auth: "", success: { (data, response, error) in
+        // HttpClientAPI makes the API authenticate call to the server
+        HttpClientAPI.instance().makeAPICall(url: hippodrome.auth_endpoint, params:paramsDictionary, method: .POST,auth: "", success: { (data, response, error) in
             do {
                 let json = try JSONSerialization.jsonObject(with: (data as Data?)!, options: []) as! [String: AnyObject]
-                let token = json["token"] as! String
-                self.session_auth_token = token;
+                self.session_auth_token = json["token"] as! String
                 completionHandler(true)
             } catch let error as NSError {
                 print("Failed: \(error.localizedDescription)")
@@ -163,9 +182,4 @@ class hippodrome: NSObject {
             completionHandler(false)
         })
     }
-
-    func configure() {
-
-    }
-
 }
