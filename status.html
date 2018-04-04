@@ -3,27 +3,45 @@
 <head>
 </head>
 <body>
-  <h1>hippodrome test</h1>
+
+  <style>
+    .button {
+      background-color: gray;
+      border: none;
+      color: white;
+      padding: 15px 32px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+    }
+  </style>
+
+  <h1>hippodrome testing</h1>
 
     <input type="text" name="username" id="username" value="" placeholder="username">
     <input type="password" name="password" id="password" value="" placeholder="password">
     <input type="text" name="message" id="message" value="" placeholder="message">
+    <input type="button" onclick="login()" value="Login">
+    <button class="button" onclick="Start_Matchmaking()">Start_Matchmaking</button>
+    <button class="button" onclick="Start_Matchmaking()">Stop_Matchmaking</button>
+
     <br><br>
 
     <button class="button" onclick="ios()">iOS_Test_Connect</button>
     <button class="button" onclick="ping()">iOS_Test_Ping</button>
     <br><br>
-    <input type="button" onclick="login()" value="Login">
-    <button class="button" onclick="send_frame()">Ready_State</button>
     <button class="button" onclick="player_ready()">Player_Ready</button>
     <button class="button" onclick="player_not_ready()">Player_Not_Ready</button>
     <button class="button" onclick="confirmed_ready()">Player_Confirmed_Ready</button>
     <button class="button" onclick="completed_round()">Completed_Round</button>
 
     <br><br>
-    <button class="button" onclick="leaveSession()">Leave_Session_Matching</button>
+    <!--<button class="button" onclick="leaveSession()">Leave_Session_Matching</button>-->
     <button class="button" onclick="frame()">Send_Data_Frame</button>
-    <button class="button" onclick="leaveSession()">Leave_Session</button>
+    <button class="button" onclick="leaveSession()">Disconnect_Session</button>
 
   <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
@@ -137,7 +155,7 @@
       socket.disconnect();
     }
 
-    function send_frame() {
+    function Start_Matchmaking() {
       //socket.emit('send_frame', { session:'test', frame:"benwashere"  });
       /*var socket = io.connect('http://localhost:3000');
       socket.on('connect', function(data) {

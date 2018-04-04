@@ -78,7 +78,7 @@ io.on('connection', function(socket){
   });
   socket.on('disconnect', function () {
     console.log("Disconnect");
-    PubSub.publish('disconnectSession', {"rand_user_connection":rand_user_connection});
+    PubSub.publish('disconnectUser', {"rand_user":rand_user_connection});
     rand_user_connection = "";
     rand_user_session_id = "";
   });

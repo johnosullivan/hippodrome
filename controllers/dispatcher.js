@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import configs from '../configs';
 import session from '../lib/session';
 import random from "random-id";
+import users from '../models/User';
 
 const TOKEN_SECRET = configs.token.secret;
 
@@ -21,16 +22,14 @@ module.exports = class dispatcher {
     // variables for dev testing
     this.test_func = "";
     this.test_session_id = "";
-
+    // handlers for the dispatcher
     var self = this;
     var readyForSession_func = function (event_name, data) {
       self.readyForSession[data.user['_id']] = data.rand_user;
     };
-
     var exitSessionQuene_func = function (event_name, data) {
       delete self.readyForSession[data.user['_id']];
     };
-
     var confirmed_connection_func = function (event_name, data) {
       var token = data.user['token'];
       var rand_user = data.user['rand_user'];
@@ -44,7 +43,6 @@ module.exports = class dispatcher {
           }
       });
     };
-
     var leaveSessionn_func = function (event_name, data) {
       var token = data.user['token'];
       var rand_user = data.user['rand_user'];
@@ -59,17 +57,19 @@ module.exports = class dispatcher {
           }
       });
     };
-
-    var disconnectSession_func = function (event_name, data) {
-      var rand = data['rand_user_connection'];
+    var disconnectUser_func = function (event_name, data) {
+      var rand = data['rand_user'];
       var id = self.randToID[rand];
       for (var i = 0; i < self.global_player_pool.length; i++) {
         if (id == self.global_player_pool[i]) { self.global_player_pool.splice(i, 1); }
       }
+      // Checks if the user has disconnect when in a session.
+      if (self.playerToSession[rand] != undefined) {
+        self.sessions[self.playerToSession[data['rand_user']]].playerDisconnected(data);
+      }
       delete self.sockets[id];
       delete self.readyForSession[id];
     };
-
     var readyPlayer_func = function (event_name, data) {
       self.sessions[self.playerToSession[data['rand_user']]].playerReady(data);
     };
@@ -88,7 +88,7 @@ module.exports = class dispatcher {
     var terminateSession_func = function (event_name, data) {
       delete self.sessions[data['session_id']];
     };
-
+    // sets the pubsub handlers for the dispatcher
     this.readyForSession_pubsub = PubSub.subscribe('readyForSession', readyForSession_func);
     this.readyPlayer_pubsub = PubSub.subscribe('playerReady', readyPlayer_func);
     this.readyNotPlayer_pubsub = PubSub.subscribe('playerNotReady', readyNotPlayerr_func);
@@ -98,27 +98,29 @@ module.exports = class dispatcher {
     this.exitSessionQuene_pubsub = PubSub.subscribe('exitSessionQuene', exitSessionQuene_func);
     this.confirmedConnection_pubsub = PubSub.subscribe('confirmedSession', confirmed_connection_func);
     this.leaveSession_pubsub = PubSub.subscribe('leaveSession', leaveSessionn_func);
-    this.disconnectSession_pubsub = PubSub.subscribe('disconnectSession', disconnectSession_func);
+    this.disconnectUser_pubsub = PubSub.subscribe('disconnectUser', disconnectUser_func);
     this.terminateSession_pubsub = PubSub.subscribe('terminateSession', terminateSession_func);
   }
 
   loop() {
-
+    // size of the session
     var session_size = 2;
-
+    // debugging info
     console.log("=========================================");
     console.log("global_player_pool -> ", this.global_player_pool.length);
     console.log("sessions_pool -> ", Object.keys(this.sessions));
-
+    // checks if the global pool has enough players to dispatch
     if (this.global_player_pool.length >= session_size) {
       var current_session_players = [];
       var current_session_sockets = {};
       var session_id = random(50,"aA0");
       var function_name = random(25,"aA0");
-
+      var player_ids = [];
+      // picks the players for the session and sets valids
       for (var i = 0; i < session_size; i++) {
         var rand_index = Math.floor(Math.random() * this.global_player_pool.length);
         var id = this.global_player_pool[rand_index];
+        player_ids.push(id);
         var player = this.readyForSession[id];
         current_session_players.push({ "id":id, "player":player });
         current_session_sockets[player] = this.sockets[this.randToID[player]];
@@ -127,25 +129,32 @@ module.exports = class dispatcher {
         //TODO: this.sockets[id].join(session_id);
       }
 
-      var current_session = new session(
-        this.io,
-        session_id,
-        function_name,
-        current_session_players,
-        current_session_sockets
-      );
-      this.sessions[session_id] = current_session;
-      current_session.release();
-
-    } else {
+      var self = this;
+      users.find({'_id': { $in: player_ids  } }, function(err, profiles){
+          console.log(profiles);
+          for (var i = 0; i < profiles.length; i++) {
+            current_session_players[i]['player_profile'] = profiles[i];
+          }
+          // creates the session and releases to the players
+          var current_session = new session(
+            self.io,
+            session_id,
+            function_name,
+            current_session_players,
+            current_session_sockets
+          );
+          // stores the session in the dispatcher and releases to the player
+          self.sessions[session_id] = current_session;
+          current_session.release();
+      });
 
     }
-
   }
 
   start() {
+    // starts the interval timer for session dispatching
     var self = this;
-    this.interval_object = setInterval(function() { self.loop() }, 20000);
+    this.interval_object = setInterval(function() { self.loop() }, 4000);
   }
 
   kill() {
@@ -154,7 +163,7 @@ module.exports = class dispatcher {
     PubSub.unsubscribe(this.exitSessionQuene_pubsub);
     PubSub.unsubscribe(this.confirmedConnection_pubsub);
     PubSub.unsubscribe(this.leaveSession_pubsub);
-    PubSub.unsubscribe(this.disconnectSession_pubsub);
+    PubSub.unsubscribe(this.disconnectUser_pubsub);
     PubSub.unsubscribe(this.readyNotPlayer_pubsub);
     PubSub.unsubscribe(this.readyPlayer_pubsub);
     PubSub.unsubscribe(this.sessionPrestartConfirm_pubsub);
