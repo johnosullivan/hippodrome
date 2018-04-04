@@ -132,12 +132,12 @@ module.exports = class dispatcher {
       var self = this;
       users.find({'_id': { $in: player_ids  } }, function(err, profiles){
           for (var i = 0; i < profiles.length; i++) {
-            var profile = profiles[i];
+            var profile = JSON.parse(JSON.stringify(profiles[i]));
             delete profile['id'];
             delete profile['password'];
             delete profile['updatedAt'];
             delete profile['createdAt'];
-            current_session_players[i]['player_profile'] = profiles[i];
+            current_session_players[i]['player_profile'] = profile;
           }
           // creates the session and releases to the players
           var current_session = new session(

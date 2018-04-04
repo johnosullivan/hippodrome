@@ -17,6 +17,18 @@
       margin: 4px 2px;
       cursor: pointer;
     }
+    input[type=text] {
+      width: 100%;
+      padding: 12px 20px;
+      margin: 8px 0;
+      box-sizing: border-box;
+    }
+    input[type=password] {
+      width: 100%;
+      padding: 12px 20px;
+      margin: 8px 0;
+      box-sizing: border-box;
+    }
   </style>
 
   <h1>hippodrome testing</h1>
@@ -24,7 +36,7 @@
     <input type="text" name="username" id="username" value="" placeholder="username">
     <input type="password" name="password" id="password" value="" placeholder="password">
     <input type="text" name="message" id="message" value="" placeholder="message">
-    <input type="button" onclick="login()" value="Login">
+    <button class="button" onclick="login()">Login</button>
     <button class="button" onclick="Start_Matchmaking()">Start_Matchmaking</button>
     <button class="button" onclick="Start_Matchmaking()">Stop_Matchmaking</button>
 

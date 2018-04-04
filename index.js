@@ -77,7 +77,7 @@ io.on('connection', function(socket){
     PubSub.publish('sessionPrestartConfirm', { 'user': payload, 'rand_user': rand_user_connection });
   });
   socket.on('disconnect', function () {
-    console.log("Disconnect");
+    //console.log("Disconnect");
     PubSub.publish('disconnectUser', {"rand_user":rand_user_connection});
     rand_user_connection = "";
     rand_user_session_id = "";
