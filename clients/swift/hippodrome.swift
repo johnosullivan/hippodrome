@@ -9,10 +9,23 @@ import Foundation
 import SocketIO
 
 enum HttpMethod : String {
-    case  GET
-    case  POST
-    case  DELETE
-    case  PUT
+    case GET
+    case POST
+    case DELETE
+    case PUT
+}
+
+enum HippodromeType: String {
+    case SESSION_PRESTART
+    case SESSION_COUNTDOWN_START
+    case SESSION_COUNTDOWN_INTERVAL
+    case SESSION_COMPLETED_OVERVIEW
+    case SESSION_GO
+    case JOIN_SESSION_FOUND
+    case SESSION_PLAYER_READY
+    case SESSION_PLAYER_DISCONNECTED
+    case SESSION_PLAYER_NOT_READY
+    case SESSION_FRAME
 }
 
 class HttpClientAPI: NSObject{
@@ -75,7 +88,9 @@ class hippodrome: NSObject {
     var function_name = ""
 
     var completionFrameHandler: (Any) -> Void?
-    var completionSessionHandler: (Any) -> Void?
+    var completionSessionHandler: (HippodromeType, Any) -> Void?
+
+
 
     override init() {
         //super.init()
@@ -94,56 +109,57 @@ class hippodrome: NSObject {
         }
     }
 
-    func playerPubSub(handler: @escaping (_ data: Any) -> Void) {
+    func playerPubSub(handler: @escaping (_ type:HippodromeType,_ data: Any) -> Void) {
         self.completionSessionHandler = handler
         socket.on(self.rand_user) {data, ack in
-
             if let arr = data as? [[String: Any]] {
                 let type = arr[0]["type"] as? String
-                print(type!)
-
                 if (type! == "JOIN_SESSION_FOUND") {
                     self.function_name = (arr[0]["function_name"] as? String)!
                     self.session_id = (arr[0]["session_id"] as? String)!
-                    print(self.function_name)
-                    print(self.session_id)
+                    self.completionSessionHandler(.JOIN_SESSION_FOUND,data);
                     self.socket.on(self.function_name) {data, ack in
-                        self.completionFrameHandler(data);
+                        self.completionSessionHandler(.SESSION_FRAME,data);
                     }
-                } else {
-                    self.completionSessionHandler(data);
+                } else if (type! == "SESSION_PRESTART") {
+                    self.completionSessionHandler(.SESSION_PRESTART,data);
+                } else if (type! == "SESSION_PLAYER_READY") {
+                    self.completionSessionHandler(.SESSION_PLAYER_READY,data);
+                } else if (type! == "SESSION_PLAYER_NOT_READY") {
+                    self.completionSessionHandler(.SESSION_PLAYER_NOT_READY,data);
+                } else if (type! == "SESSION_PLAYER_NOT_READY") {
+                    self.completionSessionHandler(.SESSION_PLAYER_NOT_READY,data);
+                } else if (type! == "SESSION_PLAYER_NOT_READY") {
+                    self.completionSessionHandler(.SESSION_PLAYER_NOT_READY,data);
+                } else if (type! == "SESSION_COUNTDOWN_START") {
+                    self.completionSessionHandler(.SESSION_COUNTDOWN_START,data);
+                } else if (type! == "SESSION_COUNTDOWN_INTERVAL") {
+                    self.completionSessionHandler(.SESSION_COUNTDOWN_INTERVAL,data);
+                } else if (type! == "SESSION_COMPLETED_OVERVIEW") {
+                    self.completionSessionHandler(.SESSION_COMPLETED_OVERVIEW,data);
+                } else if (type! == "SESSION_PLAYER_DISCONNECTED") {
+                    self.completionSessionHandler(.SESSION_PLAYER_DISCONNECTED,data);
+                } else if (type! == "SESSION_GO") {
+                    self.completionSessionHandler(.SESSION_GO,data);
                 }
-
-
             }
-
         }
     }
 
-    func sessionPrestartConfirm() {
+    func sessionPrestartConfirm(handler: @escaping (_ type:HippodromeType, _ data: Any) -> Void) {
+        self.completionSessionHandler = handler;
         self.socket.emit("sessionPrestartConfirm", ["token": self.session_auth_token])
     }
 
-    func completedRound(results: Any) {
-        self.socket.emit("completedRound", ["token": self.session_auth_token, "results": results])
-    }
+    func completedRound(results: Any) { self.socket.emit("completedRound", ["token": self.session_auth_token, "results": results]) }
 
-    func playerReady() {
-        // Sends the frame to the session with its players
-        self.socket.emit("playerReady", ["token": self.session_auth_token])
-    }
+    func playerReady() { self.socket.emit("playerReady", ["token": self.session_auth_token]) }
 
-    func sendFrame(payload: Any) {
-        // Sends the frame to the session with its players
-        self.socket.emit("sendFrame", ["payload": payload, "function_name": self.function_name, "session_id": self.session_id])
-    }
+    func sendFrame(payload: Any) { self.socket.emit("sendFrame", ["payload": payload, "function_name": self.function_name, "session_id": self.session_id]) }
 
-    func leaveSession() {
-        // Leaves the current session in play
-        self.socket.emit("leaveSession", ["token": self.session_auth_token,  "rand_user": self.rand_user, "session_id": self.session_id])
-    }
+    func leaveSession() { self.socket.emit("leaveSession", ["token": self.session_auth_token,  "rand_user": self.rand_user, "session_id": self.session_id]) }
 
-    func readyForSession(completionHandler: @escaping (_ data: Any) -> Void) {
+    func readyForMatchMaking(handler: @escaping (_ type:HippodromeType, _ data: Any) -> Void) {
         // Preparing the headers
         let auth_token = "Bearer " + session_auth_token
         let paramsDictionary = [String:Any]()
@@ -152,7 +168,7 @@ class hippodrome: NSObject {
             do {
                 let json = try JSONSerialization.jsonObject(with: (data as Data?)!, options: []) as! [String: AnyObject]
                 self.rand_user = json["rand_user"] as! String
-                self.playerPubSub(handler: completionHandler)
+                self.playerPubSub(handler: handler)
                 self.socket.connect()
             } catch let error as NSError {
                 print("Failed: \(error.localizedDescription)")
@@ -162,7 +178,7 @@ class hippodrome: NSObject {
         })
     }
 
-    func authenticate(username: String, password: String, completionHandler: @escaping (_ sucess: Bool) -> Void) {
+    func authenticate(username: String, password: String, handler: @escaping (_ sucess: Bool, _ error: Any) -> Void) {
         // Preparing the authenticate API call
         var paramsDictionary = [String:Any]()
         paramsDictionary["username"] = username
@@ -172,14 +188,14 @@ class hippodrome: NSObject {
             do {
                 let json = try JSONSerialization.jsonObject(with: (data as Data?)!, options: []) as! [String: AnyObject]
                 self.session_auth_token = json["token"] as! String
-                completionHandler(true)
+                handler(true, error as Any)
             } catch let error as NSError {
                 print("Failed: \(error.localizedDescription)")
-                completionHandler(false)
+                handler(false,error)
             }
         }, failure: { (data, response, error) in
             print(response as Any)
-            completionHandler(false)
+            handler(false, error!)
         })
     }
 }
