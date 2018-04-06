@@ -1,2 +1,1 @@
-![alt text][logo]
-[logo]: resources/hippodrome.png "hippodrome"
+<img src="resources/hippodrome.png">
