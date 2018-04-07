@@ -111,8 +111,9 @@ module.exports = class dispatcher {
     //console.log("sessions_pool -> ", Object.keys(this.sessions));
     // checks if the global pool has enough players to dispatch
     if (this.global_player_pool.length >= session_size) {
-      var current_session_players = [];
+      var current_session_players = {};
       var current_session_sockets = {};
+      var current_session_id_randon = {};
       var session_id = random(50,"aA0");
       var function_name = random(25,"aA0");
       var player_ids = [];
@@ -122,7 +123,8 @@ module.exports = class dispatcher {
         var id = this.global_player_pool[rand_index];
         player_ids.push(id);
         var player = this.readyForSession[id];
-        current_session_players.push({ "id":id, "player":player });
+        current_session_players[id] = { "id":id, "player":player };
+        //current_session_players.push({ "id":id, "player":player, "player_profile":{} });
         current_session_sockets[player] = this.sockets[this.randToID[player]];
         this.playerToSession[player] = session_id;
         this.global_player_pool.splice(rand_index, 1);
@@ -131,20 +133,25 @@ module.exports = class dispatcher {
 
       var self = this;
       users.find({'_id': { $in: player_ids  } }, function(err, profiles){
+
+          console.log(profiles);
+          var allplayers = [];
           for (var i = 0; i < profiles.length; i++) {
             var profile = JSON.parse(JSON.stringify(profiles[i]));
             delete profile['id'];
             delete profile['password'];
             delete profile['updatedAt'];
             delete profile['createdAt'];
-            current_session_players[i]['player_profile'] = profile;
+
+            current_session_players[profile['_id']]['player_profile'] = profile;
+            allplayers.push(current_session_players[profile['_id']]);
           }
           // creates the session and releases to the players
           var current_session = new session(
             self.io,
             session_id,
             function_name,
-            current_session_players,
+            allplayers,
             current_session_sockets
           );
           // stores the session in the dispatcher and releases to the player

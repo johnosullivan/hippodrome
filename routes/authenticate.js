@@ -65,6 +65,24 @@ module.exports = function(app, route, jwt) {
   }); // registration
 
   /*
+   * @description -> verify token
+   * @req.body params required -> none
+   */
+  route.get('/auth/verify', function(req, res) {
+    var token = req.headers && req.headers.authorization ? req.headers.authorization.split(' ')[1] : '';
+    if (token) {
+        jwt.verify(token, TOKEN_SECRET, function(err, decoded) {
+            if (err) {
+              res.json({ "success":false, "error": err });
+            } else {
+              res.json({ "success":true, "error": err });
+            }
+        });
+    } else {
+        res.json({ "success":false });
+    }
+  });
+  /*
    * @description -> The route for the the login route
    * @req.body params required -> username, password
    */
