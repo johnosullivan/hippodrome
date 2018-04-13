@@ -78,33 +78,26 @@ class hippodrome: NSObject {
     static let base_endpoint = "http://localhost:3000"
     static let auth_endpoint = base_endpoint + "/api/auth/authenticate"
     static let readySession_endpoint = base_endpoint + "/api/readyForSession"
-
-    static let session_found = "JOIN_SESSION_FOUND"
+    static let verify_endpoint = base_endpoint + "/api/auth/verify"
 
     var socket = SocketIOClient(socketURL: URL(string: base_endpoint)!, config: [.log(true), .compress])
     var session_auth_token = ""
-    var rand_user = ""
+    public var rand_user = ""
     var session_id = ""
     var function_name = ""
 
     var completionFrameHandler: (Any) -> Void?
     var completionSessionHandler: (HippodromeType, Any) -> Void?
 
-
-
     override init() {
         //super.init()
-
-        let temp_handler: (Any) -> Void = { success in
-
-        }
+        let temp_handler: (Any) -> Void = { success in }
         self.completionFrameHandler = temp_handler;
         self.completionSessionHandler = temp_handler;
     }
 
     func configure() {
         socket.on(clientEvent: .connect) {data, ack in
-            print("socket connection -> \(data)")
             self.socket.emit("confirmedSession", ["token":self.session_auth_token,"rand_user":self.rand_user])
         }
     }
@@ -146,6 +139,30 @@ class hippodrome: NSObject {
         }
     }
 
+    func logout() {
+        self.session_auth_token = "";
+    }
+
+    func isValidToken(result: @escaping (_ success: Bool) -> Void) {
+        // Preparing the headers
+        let auth_token = "Bearer " + session_auth_token
+        let paramsDictionary = [String:Any]()
+        // HttpClientAPI makes the API readyForSession call to the server
+        HttpClientAPI.instance().makeAPICall(url: hippodrome.verify_endpoint, params:paramsDictionary, method: .GET,auth: auth_token, success: { (data, response, error) in
+            do {
+                let json = try JSONSerialization.jsonObject(with: (data as Data?)!, options: []) as! [String: AnyObject]
+                print(json)
+                let success = json["success"] as! Bool
+                result(success)
+            } catch let error as NSError {
+                print("Failed: \(error.localizedDescription)")
+                result(false)
+            }
+        }, failure: { (data, response, error) in
+            result(false)
+        })
+    }
+
     func sessionPrestartConfirm(handler: @escaping (_ type:HippodromeType, _ data: Any) -> Void) {
         self.completionSessionHandler = handler;
         self.socket.emit("sessionPrestartConfirm", ["token": self.session_auth_token])
@@ -160,22 +177,24 @@ class hippodrome: NSObject {
     func leaveSession() { self.socket.emit("leaveSession", ["token": self.session_auth_token,  "rand_user": self.rand_user, "session_id": self.session_id]) }
 
     func readyForMatchMaking(handler: @escaping (_ type:HippodromeType, _ data: Any) -> Void) {
-        // Preparing the headers
-        let auth_token = "Bearer " + session_auth_token
-        let paramsDictionary = [String:Any]()
-        // HttpClientAPI makes the API readyForSession call to the server
-        HttpClientAPI.instance().makeAPICall(url: hippodrome.readySession_endpoint, params:paramsDictionary, method: .GET,auth: auth_token, success: { (data, response, error) in
-            do {
-                let json = try JSONSerialization.jsonObject(with: (data as Data?)!, options: []) as! [String: AnyObject]
-                self.rand_user = json["rand_user"] as! String
-                self.playerPubSub(handler: handler)
-                self.socket.connect()
-            } catch let error as NSError {
-                print("Failed: \(error.localizedDescription)")
-            }
-        }, failure: { (data, response, error) in
-            print(response as Any)
-        })
+        if (self.session_auth_token != "") {
+            // Preparing the headers
+            let auth_token = "Bearer " + session_auth_token
+            let paramsDictionary = [String:Any]()
+            // HttpClientAPI makes the API readyForSession call to the server
+            HttpClientAPI.instance().makeAPICall(url: hippodrome.readySession_endpoint, params:paramsDictionary, method: .GET,auth: auth_token, success: { (data, response, error) in
+                do {
+                    let json = try JSONSerialization.jsonObject(with: (data as Data?)!, options: []) as! [String: AnyObject]
+                    self.rand_user = json["rand_user"] as! String
+                    self.playerPubSub(handler: handler)
+                    self.socket.connect()
+                } catch let error as NSError {
+                    print("Failed: \(error.localizedDescription)")
+                }
+            }, failure: { (data, response, error) in
+                print(response as Any)
+            })
+        }
     }
 
     func authenticate(username: String, password: String, handler: @escaping (_ sucess: Bool, _ error: Any) -> Void) {

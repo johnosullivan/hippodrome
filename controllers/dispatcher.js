@@ -134,7 +134,7 @@ module.exports = class dispatcher {
       var self = this;
       users.find({'_id': { $in: player_ids  } }, function(err, profiles){
 
-          console.log(profiles);
+          //console.log(profiles);
           var allplayers = [];
           for (var i = 0; i < profiles.length; i++) {
             var profile = JSON.parse(JSON.stringify(profiles[i]));
