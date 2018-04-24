@@ -21,7 +21,7 @@ var readyForSession = {};
 var dispatcher_controller = new dispatcher(io);
 // connects to the mongodb
 mongoose.Promise = global.Promise;
-mongoose.connect(configs.database.address, { promiseLibrary: global.Promise });
+mongoose.connect(process.MONGODB_URI, { promiseLibrary: global.Promise });
 // cors defined here.
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -29,8 +29,6 @@ app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Headers", "Authorization, Origin, X-Requested-With, Content-Type, Accept");
   next();
 });
-
-console.log(process); 
 // defines the body parser for the http calls.
 app.set('jwt_secret', "loyolawins");
 app.use(bodyParser.json());
