@@ -1,6 +1,7 @@
 import random from "random-id";
 import PubSub from 'pubsub-js';
 
+
 module.exports = function(app, route, jwt, socket, readyForSession) {
   /*
    * @description -> The route for the the readyForSession route

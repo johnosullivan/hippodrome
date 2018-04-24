@@ -1,8 +1,6 @@
 var mongoose = require('mongoose');
 var shortid = require('shortid');
-
 var Schema = mongoose.Schema;
-
 var schema = new Schema({
   id: {
     type: String,

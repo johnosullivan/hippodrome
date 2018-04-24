@@ -1,5 +1,6 @@
 import configs from '../configs';
 import status from '../system_status';
+
 import users from '../models/user';
 
 const TOKEN_SECRET = configs.token.secret;

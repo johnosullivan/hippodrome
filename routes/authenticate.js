@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt-nodejs';
 import users from '../models/user';
+
 import status from '../system_status';
 import configs from '../configs';
 // jwt variables needed for authenticate tokens.

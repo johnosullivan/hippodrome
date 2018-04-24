@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import configs from '../configs';
 import session from '../lib/session';
 import random from "random-id";
+
 import users from '../models/user';
 
 const TOKEN_SECRET = configs.token.secret;
