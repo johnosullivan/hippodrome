@@ -113,7 +113,7 @@
       var password = document.getElementById("password").value;
 
       var xhttp = new XMLHttpRequest();
-      xhttp.open("POST", "http://localhost:3000/api/auth/authenticate", true);
+      xhttp.open("POST", "https://gshippodrome.herokuapp.com/api/auth/authenticate", true);
       xhttp.setRequestHeader("Content-Type", "application/json");
       xhttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
@@ -133,7 +133,7 @@
 
     function readySession(data) {
       console.log(data);
-      socket = io.connect('http://localhost:3000');
+      socket = io.connect('https://gshippodrome.herokuapp.com/');
       var s = data;
       socket.on('message', function(data) {
         console.log('Incoming message:', data);
@@ -174,7 +174,7 @@
         console.log("connected!", data);
       });*/
       var xhttp = new XMLHttpRequest();
-      xhttp.open("GET", "http://localhost:3000/api/readyForSession", true);
+      xhttp.open("GET", "https://gshippodrome.herokuapp.com/api/readyForSession", true);
       xhttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
          // Action to be performed when the document is read;

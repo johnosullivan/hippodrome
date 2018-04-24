@@ -29,6 +29,8 @@ app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Headers", "Authorization, Origin, X-Requested-With, Content-Type, Accept");
   next();
 });
+
+console.log(process); 
 // defines the body parser for the http calls.
 app.set('jwt_secret', "loyolawins");
 app.use(bodyParser.json());
