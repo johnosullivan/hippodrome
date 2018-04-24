@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt-nodejs';
-import users from '../models/User';
+import users from '../models/user';
 import status from '../system_status';
 import configs from '../configs';
 // jwt variables needed for authenticate tokens.
@@ -14,7 +14,7 @@ module.exports = function(app, route, jwt) {
   route.post('/auth/registration', function(req, res) {
     // Will see if the user exists with the username
     users.findOne({
-      username: req.body.username
+      username: req.body.usernames
     }, function handleQuery(error, user) {
       // If node.js cannot access mongodb returns internal error.
       if (error) {
