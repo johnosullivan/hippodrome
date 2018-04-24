@@ -60,6 +60,7 @@ module.exports = class dispatcher {
     };
     var disconnectUser_func = function (event_name, data) {
       var rand = data['rand_user'];
+      console.log("User Disconnect: ", rand);
       var id = self.randToID[rand];
       for (var i = 0; i < self.global_player_pool.length; i++) {
         if (id == self.global_player_pool[i]) { self.global_player_pool.splice(i, 1); }
@@ -87,6 +88,7 @@ module.exports = class dispatcher {
       self.sessions[self.playerToSession[data['rand_user']]].completedRound(data);
     };
     var terminateSession_func = function (event_name, data) {
+      console.log("Terminate Session: ", data['session_id']);
       delete self.sessions[data['session_id']];
     };
     // sets the pubsub handlers for the dispatcher
