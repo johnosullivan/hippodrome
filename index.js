@@ -21,6 +21,7 @@ var readyForSession = {};
 var dispatcher_controller = new dispatcher(io);
 // connects to the mongodb
 mongoose.Promise = global.Promise;
+console.log(process.MONGODB_URI);
 mongoose.connect(process.MONGODB_URI, { promiseLibrary: global.Promise });
 // cors defined here.
 app.use(function(req, res, next) {
