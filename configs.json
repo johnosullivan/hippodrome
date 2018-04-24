@@ -8,6 +8,6 @@
     "expiresInSeconds": "2628000"
   },
   "database": {
-    "address":"mongodb://localhost:27017/hippodrome"
+    "address":"mongodb://admin:test@ds157089.mlab.com:57089/heroku_mjppgdq6"
   }
 }
