@@ -74,20 +74,38 @@ class HttpClientAPI: NSObject{
 class hippodrome: NSObject {
 
     static let sharedInstance = hippodrome()
-
-    static let base_endpoint = "http://localhost:3000"
+    static let base_endpoint = "https://gshippodrome.herokuapp.com"
     static let auth_endpoint = base_endpoint + "/api/auth/authenticate"
     static let readySession_endpoint = base_endpoint + "/api/readyForSession"
     static let verify_endpoint = base_endpoint + "/api/auth/verify"
 
-    var socket = SocketIOClient(socketURL: URL(string: base_endpoint)!, config: [.log(true), .compress])
+    var socket = SocketIOClient(socketURL: URL(string: base_endpoint)!, config: [.log(false), .compress])
     var session_auth_token = ""
     public var rand_user = ""
     var session_id = ""
     var function_name = ""
 
+    private var players:[[String: Any]] = []
+    private var results:[[String: Any]] = []
+
     var completionFrameHandler: (Any) -> Void?
     var completionSessionHandler: (HippodromeType, Any) -> Void?
+
+    func setPlayers(players: [[String: Any]]) {
+        self.players = players
+    }
+
+    func getPlayers() -> [[String: Any]] {
+        return self.players
+    }
+
+    func setResults(results: [[String: Any]]) {
+        self.results = results
+    }
+
+    func getResults() -> [[String: Any]] {
+        return self.results
+    }
 
     override init() {
         //super.init()
